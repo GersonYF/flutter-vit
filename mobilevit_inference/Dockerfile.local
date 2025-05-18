@@ -1,0 +1,18 @@
+FROM pytorch/pytorch:2.0.1-cuda11.7-cudnn8-runtime
+
+# Set working directory
+WORKDIR /app
+
+# Install required dependencies
+RUN pip install --no-cache-dir \
+    requests \
+    Pillow \
+    transformers \
+    matplotlib \
+    numpy
+
+# Copy your script into the container
+COPY segmentation.py .
+
+# Set the entrypoint to run the script
+CMD ["python", "segmentation.py"]

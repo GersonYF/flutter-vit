@@ -1,0 +1,22 @@
+FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+
+# Establecer directorio de trabajo
+WORKDIR /app
+
+# Instalar versiones específicas y compatibles de las dependencias
+RUN pip install --no-cache-dir \
+    requests==2.31.0 \
+    Pillow==10.1.0 \
+    transformers==4.36.0 \
+    matplotlib==3.8.2 \
+    numpy==1.26.2 \
+    flask==3.0.0
+
+# Copia el código de la aplicación
+COPY app.py .
+
+# Exponer el puerto en el que se ejecutará la aplicación
+EXPOSE 5000
+
+# Usar Flask directamente en lugar de Gunicorn para simplificar la depuración
+CMD ["python", "app.py"]
