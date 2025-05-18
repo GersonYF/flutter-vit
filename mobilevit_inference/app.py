@@ -30,8 +30,50 @@ try:
     image_processor = AutoImageProcessor.from_pretrained(MODEL_NAME)
     model = TFMobileViTForSemanticSegmentation.from_pretrained(MODEL_NAME)
     print(f"Modelo {MODEL_NAME} cargado correctamente")
+    
+    # Intentar obtener información de las clases de la configuración
+    config = model.config
+    id2label = getattr(config, 'id2label', None)
+    if id2label:
+        print(f"Etiquetas de clase encontradas: {len(id2label)} clases")
+    else:
+        print("No se encontraron etiquetas de clase en la configuración del modelo")
+        # Crear un diccionario de etiquetas genéricas
+        id2label = {i: f"Clase_{i}" for i in range(model.config.num_labels)}
+    
 except Exception as e:
     print(f"Error al cargar el modelo: {e}")
+    id2label = {}
+
+def get_class_statistics(predictions, num_classes):
+    """
+    Calcular estadísticas sobre las clases presentes en la predicción.
+    
+    Args:
+        predictions: Array NumPy con las predicciones de clase para cada píxel
+        num_classes: Número total de clases
+        
+    Returns:
+        dict: Estadísticas de clases {class_id: {name, count, percentage}}
+    """
+    # Contar píxeles por clase
+    total_pixels = predictions.size
+    class_stats = {}
+    
+    for class_id in range(num_classes):
+        # Contar píxeles de esta clase
+        count = np.sum(predictions == class_id)
+        
+        # Solo incluir clases presentes en la imagen
+        if count > 0:
+            percentage = (count / total_pixels) * 100
+            class_stats[int(class_id)] = {
+                "name": id2label.get(class_id, f"Clase_{class_id}"),
+                "pixel_count": int(count),
+                "percentage": float(percentage)
+            }
+    
+    return class_stats
     
 def visualize_segmentation(logits, original_image):
     """
@@ -42,7 +84,7 @@ def visualize_segmentation(logits, original_image):
         original_image: Imagen PIL original
         
     Returns:
-        bytes: Imagen de visualización en formato bytes (PNG)
+        tuple: (buffer de imagen, estadísticas de clases, mapa de predicciones)
     """
     # Convertir logits TensorFlow a NumPy
     logits_np = logits.numpy()
@@ -50,9 +92,11 @@ def visualize_segmentation(logits, original_image):
     # Obtener predicciones tomando argmax a lo largo de la dimensión de clases
     predictions = np.argmax(logits_np, axis=1)[0]  # Tomar la primera imagen del batch
     
-    # Crear un mapa de colores (un color por clase)
+    # Calcular estadísticas de clases
     num_classes = logits_np.shape[1]
-    # Usar colores más distintivos para las clases
+    class_stats = get_class_statistics(predictions, num_classes)
+    
+    # Crear un mapa de colores (un color por clase)
     cmap = plt.cm.get_cmap('tab20', num_classes) if num_classes <= 20 else plt.cm.get_cmap('viridis', num_classes)
     colors = [cmap(i) for i in range(num_classes)]
     
@@ -86,7 +130,6 @@ def visualize_segmentation(logits, original_image):
     axes[1].axis('off')
     
     # Crear una superposición combinada (50% original, 50% segmentación)
-    # Método seguro para trabajar con diferentes versiones de PIL
     original_array = np.array(original_image_resized).astype(float)
     segmentation_array = np.array(segmentation_image).astype(float)
     overlay_array = (original_array * 0.5 + segmentation_array * 0.5).astype(np.uint8)
@@ -95,8 +138,28 @@ def visualize_segmentation(logits, original_image):
     axes[2].set_title('Superposición')
     axes[2].axis('off')
     
+    # Añadir leyenda con las clases principales
+    # Ordenar clases por porcentaje (mayor a menor)
+    sorted_classes = sorted(
+        class_stats.items(), 
+        key=lambda x: x[1]['percentage'], 
+        reverse=True
+    )
+    
+    # Añadir leyenda solo para las 5 clases principales o menos
+    legend_elements = []
+    for class_id, stats in sorted_classes[:5]:
+        color = colors[class_id]
+        label = f"{stats['name']} ({stats['percentage']:.1f}%)"
+        legend_elements.append(plt.Line2D([0], [0], marker='s', color='w', 
+                               markerfacecolor=color, markersize=10, label=label))
+    
+    if legend_elements:
+        fig.legend(handles=legend_elements, loc='lower center', ncol=min(5, len(legend_elements)))
+    
     # Ajustar layout
     plt.tight_layout()
+    plt.subplots_adjust(bottom=0.15 if legend_elements else 0.05)
     
     # Guardar la figura en un buffer de bytes
     buf = io.BytesIO()
@@ -104,7 +167,7 @@ def visualize_segmentation(logits, original_image):
     plt.close(fig)
     buf.seek(0)
     
-    return buf
+    return buf, class_stats, predictions
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -113,7 +176,8 @@ def health_check():
         "status": "healthy",
         "model": MODEL_NAME,
         "backend": "TensorFlow",
-        "note": "Modelo entrenado específicamente para segmentación semántica"
+        "num_classes": model.config.num_labels,
+        "id2label": id2label
     })
 
 @app.route('/segment', methods=['POST'])
@@ -126,8 +190,13 @@ def segment_image():
     - Archivo de imagen subido con el nombre 'image_file'
     - Imagen en base64 con el parámetro 'image_base64'
     
+    Parámetros de consulta opcionales:
+    - format: 'image' (por defecto) o 'json'
+    - include_classes: 'true' para incluir información de clases (solo con format=json)
+    - include_map: 'true' para incluir el mapa de clases (solo con format=json)
+    
     Devuelve:
-    - La imagen de visualización en formato PNG
+    - La imagen de visualización en formato PNG o datos estructurados en JSON
     """
     try:
         # Obtener la imagen de una de las fuentes posibles
@@ -165,22 +234,41 @@ def segment_image():
         logits = outputs.logits
         print(f"Segmentación completada. Forma de logits: {logits.shape}")
         
-        # Visualizar resultados
-        visualization_buffer = visualize_segmentation(logits, image)
+        # Visualizar resultados y obtener estadísticas
+        visualization_buffer, class_stats, predictions = visualize_segmentation(logits, image)
         
         # Determinar el formato de respuesta
         response_format = request.args.get('format', 'image')
+        include_classes = request.args.get('include_classes', 'false').lower() == 'true'
+        include_map = request.args.get('include_map', 'false').lower() == 'true'
         
         if response_format == 'json':
-            # Devolver imagen como base64 en JSON
+            # Devolver imagen como base64 en JSON junto con información adicional
             image_base64 = base64.b64encode(visualization_buffer.getvalue()).decode('utf-8')
-            return jsonify({
+            
+            response_data = {
                 "segmentation_image": image_base64,
-                "classes": logits.shape[1],
-                "width": logits.shape[3],
-                "height": logits.shape[2],
-                "model": MODEL_NAME
-            })
+                "model": MODEL_NAME,
+                "image_size": {
+                    "width": image.width,
+                    "height": image.height
+                },
+                "segmentation_size": {
+                    "width": logits.shape[3],
+                    "height": logits.shape[2],
+                    "classes": logits.shape[1]
+                }
+            }
+            
+            # Incluir información de clases si se solicita
+            if include_classes:
+                response_data["classes"] = class_stats
+            
+            # Incluir mapa de clases si se solicita
+            if include_map:
+                response_data["class_map"] = predictions.tolist()
+                
+            return jsonify(response_data)
         else:
             # Devolver imagen directamente
             return send_file(
@@ -202,11 +290,15 @@ def segment_url():
     
     Parámetros de consulta:
     - url: URL de la imagen a segmentar
+    - format: 'image' (por defecto) o 'json'
+    - include_classes: 'true' para incluir información de clases (solo con format=json)
+    - include_map: 'true' para incluir el mapa de clases (solo con format=json)
     
     Devuelve:
-    - La imagen de visualización en formato PNG
+    - La imagen de visualización en formato PNG o datos estructurados en JSON
     """
     try:
+        # Obtener URL de la imagen
         image_url = request.args.get('url')
         if not image_url:
             return jsonify({"error": "Parámetro 'url' no proporcionado"}), 400
@@ -226,20 +318,70 @@ def segment_url():
         # Obtener logits
         logits = outputs.logits
         
-        # Visualizar resultados
-        visualization_buffer = visualize_segmentation(logits, image)
+        # Visualizar resultados y obtener estadísticas
+        visualization_buffer, class_stats, predictions = visualize_segmentation(logits, image)
         
-        # Devolver imagen directamente
-        return send_file(
-            visualization_buffer,
-            mimetype='image/png',
-            as_attachment=False,
-            download_name='segmentation_result.png'
-        )
+        # Determinar el formato de respuesta
+        response_format = request.args.get('format', 'image')
+        include_classes = request.args.get('include_classes', 'false').lower() == 'true'
+        include_map = request.args.get('include_map', 'false').lower() == 'true'
+        
+        if response_format == 'json':
+            # Devolver imagen como base64 en JSON junto con información adicional
+            image_base64 = base64.b64encode(visualization_buffer.getvalue()).decode('utf-8')
+            
+            response_data = {
+                "segmentation_image": image_base64,
+                "model": MODEL_NAME,
+                "image_size": {
+                    "width": image.width,
+                    "height": image.height
+                },
+                "segmentation_size": {
+                    "width": logits.shape[3],
+                    "height": logits.shape[2],
+                    "classes": logits.shape[1]
+                }
+            }
+            
+            # Incluir información de clases si se solicita
+            if include_classes:
+                response_data["classes"] = class_stats
+            
+            # Incluir mapa de clases si se solicita
+            if include_map:
+                response_data["class_map"] = predictions.tolist()
+                
+            return jsonify(response_data)
+        else:
+            # Devolver imagen directamente
+            return send_file(
+                visualization_buffer,
+                mimetype='image/png',
+                as_attachment=False,
+                download_name='segmentation_result.png'
+            )
             
     except Exception as e:
         import traceback
         traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/classes', methods=['GET'])
+def get_classes():
+    """
+    Endpoint para obtener información sobre las clases que el modelo puede detectar.
+    
+    Devuelve:
+    - Lista de clases con sus IDs y nombres
+    """
+    try:
+        return jsonify({
+            "model": MODEL_NAME,
+            "num_classes": model.config.num_labels,
+            "classes": id2label
+        })
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':

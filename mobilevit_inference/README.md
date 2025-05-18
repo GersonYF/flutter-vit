@@ -1,132 +1,7 @@
-# Aplicación de Segmentación Semántica
+# API de Segmentación Semántica con DeepLabV3 MobileViT
 
 ## Descripción
-Esta aplicación utiliza un modelo de inteligencia artificial (MobileViTV2) para realizar segmentación semántica en imágenes. La segmentación semántica consiste en clasificar cada píxel de una imagen en diferentes categorías, lo que permite identificar y separar objetos en la imagen.
-
-## Requisitos
-- Docker instalado en tu sistema
-- Conexión a internet (para descargar la imagen base de Docker y el modelo)
-- (Opcional) GPU compatible con CUDA para un procesamiento más rápido
-
-## Instalación
-
-### 1. Clonar o crear los archivos necesarios
-Crea una carpeta para el proyecto y guarda los siguientes archivos:
-
-1. `segmentation.py`: El script principal de Python
-2. `Dockerfile`: La configuración para crear la imagen de Docker
-
-### 2. Construir la imagen de Docker
-Abre una terminal en la carpeta del proyecto y ejecuta el siguiente comando:
-
-```bash
-docker build -t segmentacion-app .
-```
-
-Este proceso puede tardar varios minutos la primera vez, ya que necesita descargar la imagen base de Docker y todas las dependencias.
-
-## Uso
-
-### Ejecutar con la imagen predeterminada
-Para procesar la imagen de demostración (un gato):
-
-```bash
-docker run --rm -v $(pwd)/output:/app/output segmentacion-app
-```
-
-### Ejecutar con una imagen desde URL
-Para procesar una imagen desde una URL:
-
-```bash
-docker run --rm -v $(pwd)/output:/app/output segmentacion-app python segmentation.py "https://ejemplo.com/tu-imagen.jpg"
-```
-
-### Ejecutar con una imagen local
-Primero, copia la imagen a un directorio que montarás en Docker:
-
-```bash
-mkdir -p input
-cp tu-imagen.jpg input/
-```
-
-Luego ejecuta:
-
-```bash
-docker run --rm -v $(pwd)/input:/app/input -v $(pwd)/output:/app/output segmentacion-app python segmentation.py "/app/input/tu-imagen.jpg"
-```
-
-### Usar GPU (si está disponible)
-Si tienes una GPU compatible con CUDA, puedes usarla para acelerar el procesamiento:
-
-```bash
-docker run --rm --gpus all -v $(pwd)/output:/app/output segmentacion-app
-```
-
-## Salidas
-
-Después de ejecutar el contenedor, se crearán varios archivos en la carpeta `output`:
-
-1. `input_image.jpg`: La imagen original procesada
-2. `segmentation_logits.pt`: Un archivo de tensor PyTorch con los resultados brutos de la segmentación
-3. `segmentation_visualization.png`: Una visualización que contiene:
-   - La imagen original
-   - El mapa de segmentación (diferentes colores para diferentes clases)
-   - Una superposición del mapa de segmentación sobre la imagen original
-
-## Explicación de la visualización
-
-La visualización final contiene tres paneles:
-
-1. **Imagen Original**: La imagen de entrada sin modificar.
-2. **Mapa de Segmentación**: Cada color representa una clase diferente que el modelo ha identificado.
-3. **Superposición**: El mapa de segmentación combinado con la imagen original para ver cómo se alinean las clases con los objetos reales.
-
-## Solución de problemas
-
-### Error: No se puede conectar al daemon de Docker
-Asegúrate de que Docker esté instalado y en ejecución con:
-```bash
-docker --version
-docker info
-```
-
-### Error: No hay suficiente espacio
-Limpia imágenes no utilizadas:
-```bash
-docker system prune -a
-```
-
-### Error: La imagen es demasiado grande para procesar
-Edita `segmentation.py` para redimensionar la imagen antes de procesarla.
-
-### Error al usar GPU
-Asegúrate de tener instalados los controladores NVIDIA y nvidia-docker:
-```bash
-nvidia-smi
-docker info | grep Runtimes
-```
-
-## Personalización
-
-### Cambiar el modelo de segmentación
-Puedes modificar el modelo usado editando la línea en `segmentation.py`:
-```python
-model = MobileViTV2ForSemanticSegmentation.from_pretrained("tu-modelo-preferido")
-```
-
-### Ajustar la visualización
-Puedes modificar los colores del mapa cambiando `'viridis'` por otro mapa de colores como `'jet'`, `'rainbow'` o `'tab20'`.
-
-## Notas adicionales
-
-- La primera ejecución puede ser lenta ya que se descargan los pesos del modelo.
-- Los resultados de la segmentación dependen de las clases en las que el modelo fue entrenado.
-
-
-# API de Segmentación Semántica
-
-## Descripción
-Esta aplicación ofrece una API REST para realizar segmentación semántica en imágenes utilizando el modelo MobileViTV2. La segmentación semántica clasifica cada píxel de una imagen en diferentes categorías, permitiendo identificar y separar objetos en la imagen.
+Esta aplicación ofrece una API REST para realizar segmentación semántica en imágenes utilizando el modelo DeepLabV3 MobileViT. La segmentación semántica clasifica cada píxel de una imagen en diferentes categorías, permitiendo identificar y separar objetos en la imagen.
 
 ## Contenido del Proyecto
 - `app.py`: Servidor Flask que implementa la API
@@ -163,6 +38,12 @@ GET /health
 ```
 Devuelve el estado de la API y la información del modelo.
 
+### Obtener Información de Clases
+```
+GET /classes
+```
+Devuelve la lista de todas las clases que el modelo puede detectar, con sus IDs y nombres.
+
 ### Segmentación de Imagen (POST)
 ```
 POST /segment
@@ -174,12 +55,19 @@ Acepta uno de los siguientes parámetros:
 
 Parámetros de consulta opcionales:
 - `format=json`: Devuelve la imagen como base64 en formato JSON
+- `include_classes=true`: Incluye estadísticas detalladas de las clases detectadas
+- `include_map=true`: Incluye el mapa completo de clases (matriz de IDs de clase por píxel)
 
 ### Segmentación de Imagen por URL (GET)
 ```
 GET /segment_url?url={URL_DE_LA_IMAGEN}
 ```
 Endpoint simplificado para segmentar una imagen directamente desde una URL.
+
+También acepta los parámetros opcionales:
+- `format=json`: Devuelve la imagen como base64 en formato JSON
+- `include_classes=true`: Incluye estadísticas detalladas de las clases detectadas
+- `include_map=true`: Incluye el mapa completo de clases (matriz de IDs de clase por píxel)
 
 ## Ejemplos de Uso
 
@@ -190,24 +78,34 @@ Endpoint simplificado para segmentar una imagen directamente desde una URL.
 curl http://localhost:5000/health
 ```
 
-#### 2. Segmentar una imagen desde URL (método GET)
+#### 2. Obtener la lista de clases que el modelo puede detectar
+```bash
+curl http://localhost:5000/classes
+```
+
+#### 3. Segmentar una imagen desde URL (método GET)
 ```bash
 curl -o resultado.png "http://localhost:5000/segment_url?url=http://images.cocodataset.org/val2017/000000039769.jpg"
 ```
 
-#### 3. Segmentar una imagen desde URL (método POST)
+#### 4. Segmentar una imagen desde URL con información de clases
+```bash
+curl "http://localhost:5000/segment_url?url=http://images.cocodataset.org/val2017/000000039769.jpg&format=json&include_classes=true"
+```
+
+#### 5. Segmentar una imagen desde URL (método POST)
 ```bash
 curl -X POST -F "image_url=http://images.cocodataset.org/val2017/000000039769.jpg" -o resultado.png http://localhost:5000/segment
 ```
 
-#### 4. Segmentar una imagen subida
+#### 6. Segmentar una imagen subida
 ```bash
 curl -X POST -F "image_file=@/ruta/a/tu/imagen.jpg" -o resultado.png http://localhost:5000/segment
 ```
 
-#### 5. Obtener resultados en formato JSON
+#### 7. Obtener resultados en formato JSON con mapa de clases
 ```bash
-curl -X POST -F "image_url=http://images.cocodataset.org/val2017/000000039769.jpg" "http://localhost:5000/segment?format=json"
+curl -X POST -F "image_url=http://images.cocodataset.org/val2017/000000039769.jpg" "http://localhost:5000/segment?format=json&include_map=true"
 ```
 
 ### Usando el cliente de prueba
@@ -222,59 +120,100 @@ python test_client.py --api http://localhost:5000 --url http://images.cocodatase
 python test_client.py --api http://localhost:5000 --file tu_imagen.jpg
 ```
 
+## Formato de Respuesta JSON
+
+Al usar `format=json` y `include_classes=true`, la API devuelve:
+
+```json
+{
+  "segmentation_image": "base64_image_data...",
+  "model": "apple/deeplabv3-mobilevit-small",
+  "image_size": {
+    "width": 640, "height": 480
+  },
+  "segmentation_size": {
+    "width": 640, "height": 480, "classes": 21
+  },
+  "classes": {
+    "0": {
+      "name": "background",
+      "pixel_count": 189201,
+      "percentage": 61.55
+    },
+    "15": {
+      "name": "person",
+      "pixel_count": 86420,
+      "percentage": 28.12
+    },
+    "17": {
+      "name": "cat",
+      "pixel_count": 31659,
+      "percentage": 10.33
+    }
+  }
+}
+```
+
 ## Integración en Otras Aplicaciones
 
 ### Python
 ```python
 import requests
+import json
 from PIL import Image
 import io
+import base64
 
-# Enviar una imagen desde URL
+# Obtener información de clases
+response = requests.get("http://localhost:5000/classes")
+classes = response.json()
+print(f"El modelo puede detectar {len(classes['classes'])} clases diferentes")
+
+# Segmentar imagen y obtener estadísticas de clases
 response = requests.post(
-    "http://localhost:5000/segment",
-    data={"image_url": "http://example.com/imagen.jpg"}
-)
-
-# Guardar o mostrar la imagen resultante
-with open("resultado.png", "wb") as f:
-    f.write(response.content)
-
-# Alternativa: obtener resultado como JSON
-response = requests.post(
-    "http://localhost:5000/segment?format=json",
+    "http://localhost:5000/segment?format=json&include_classes=true",
     data={"image_url": "http://example.com/imagen.jpg"}
 )
 data = response.json()
+
+# Mostrar clases detectadas
+print("Clases detectadas en la imagen:")
+for class_id, stats in data["classes"].items():
+    print(f"- {stats['name']}: {stats['percentage']:.2f}% ({stats['pixel_count']} píxeles)")
+
+# Mostrar la imagen segmentada
+image_data = base64.b64decode(data["segmentation_image"])
+image = Image.open(io.BytesIO(image_data))
+image.show()
 ```
 
 ### JavaScript/Node.js
 ```javascript
 const fetch = require('node-fetch');
 const fs = require('fs');
-const FormData = require('form-data');
 
-// Ejemplo con URL de imagen
-fetch('http://localhost:5000/segment_url?url=http://example.com/imagen.jpg')
-  .then(response => response.buffer())
-  .then(buffer => {
-    fs.writeFileSync('resultado.png', buffer);
-    console.log('Imagen guardada como resultado.png');
-  });
+// Obtener segmentación con información de clases
+async function segmentAndAnalyze(imageUrl) {
+  const response = await fetch(
+    `http://localhost:5000/segment_url?url=${encodeURIComponent(imageUrl)}&format=json&include_classes=true`
+  );
+  
+  const data = await response.json();
+  
+  // Guardar la imagen
+  const imageBuffer = Buffer.from(data.segmentation_image, 'base64');
+  fs.writeFileSync('resultado.png', imageBuffer);
+  
+  // Mostrar estadísticas de clases
+  console.log('Clases detectadas:');
+  Object.entries(data.classes)
+    .sort((a, b) => b[1].percentage - a[1].percentage)
+    .forEach(([classId, stats]) => {
+      console.log(`- ${stats.name}: ${stats.percentage.toFixed(2)}% (${stats.pixel_count} píxeles)`);
+    });
+}
 
-// Ejemplo con archivo
-const form = new FormData();
-form.append('image_file', fs.createReadStream('imagen.jpg'));
-
-fetch('http://localhost:5000/segment', {
-  method: 'POST',
-  body: form
-})
-  .then(response => response.buffer())
-  .then(buffer => {
-    fs.writeFileSync('resultado.png', buffer);
-    console.log('Imagen guardada como resultado.png');
-  });
+segmentAndAnalyze('http://example.com/imagen.jpg');
 ```
 
 ## Despliegue en Producción
