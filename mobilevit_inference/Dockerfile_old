@@ -13,12 +13,12 @@ RUN apt-get update && apt-get install -y \
 
 # Instalar dependencias de Python
 RUN pip install --no-cache-dir \
-    transformers==4.35.2 \
+    transformers==4.30.2 \
     requests==2.31.0 \
     Pillow==9.5.0 \
     matplotlib==3.7.1 \
     numpy==1.24.3 \
-    streamlit==1.24.0 \
+    flask==2.3.2 \
     protobuf==3.20.3
 
 # Pre-descargar el modelo durante la construcción de la imagen
@@ -29,10 +29,10 @@ RUN python -c "import warnings; warnings.filterwarnings('ignore'); \
     model = TFMobileViTForSemanticSegmentation.from_pretrained(model_name)"
 
 # Copiar la aplicación
-COPY app_1.py .
+COPY app.py .
 
-# Exponer el puerto de Streamlit
-EXPOSE 8080
+# Exponer el puerto
+EXPOSE 5000
 
-# Comando para ejecutar Streamlit
-CMD ["streamlit", "run", "app_1.py", "--server.port=8080", "--server.address=0.0.0.0"]
+# Usar el flag -u para ver la salida inmediatamente en los logs
+# CMD ["python", "-u", "app.py"]
