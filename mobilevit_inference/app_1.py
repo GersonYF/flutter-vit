@@ -36,8 +36,7 @@ if uploaded_file is not None:
     outputs = model(**inputs)
     logits = outputs.logits  # [1, num_labels, h, w]
     upsampled_logits = tf.image.resize(logits, size=image.size[::-1], method='bilinear')  # (width, height)
-    segmentation = tf.math.argmax(outputs.logits, axis=1)[0].numpy()
-    print("IDs únicos:", np.unique(segmentation))
+    segmentation = tf.argmax(upsampled_logits, axis=1)[0].numpy().astype(np.uint8)
 
     # Crear overlay
     seg_rgb = np.zeros((*segmentation.shape, 3), dtype=np.uint8)
@@ -54,7 +53,7 @@ if uploaded_file is not None:
     st.markdown("### Leyenda de clases detectadas:")
     labels_present = np.unique(segmentation)
     for label in labels_present:
-        label_name = id2label.get(label, f"Clase desconocida ({label})")
+        label_name = id2label[label]
         color = palette[label]
         st.markdown(
             f"<div style='display: flex; align-items: center;'>"

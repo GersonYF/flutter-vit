@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 
 # Instalar dependencias de Python
 RUN pip install --no-cache-dir \
-    transformers==4.35.2 \
+    transformers \
     requests==2.31.0 \
     Pillow==9.5.0 \
     matplotlib==3.7.1 \
