@@ -3,7 +3,7 @@
 ## Descripción
 Esta aplicación ofrece una API REST y una interfaz web (Streamlit) para realizar segmentación semántica en imágenes utilizando el modelo **DeepLabV3 con MobileViT**. Esta técnica clasifica cada píxel de una imagen en diferentes categorías, permitiendo identificar y separar objetos con alta precisión y eficiencia.
 
-![Segmentación MobileViT](https://imgur.com/lWcXTQc.png)
+![Segmentación MobileViT](https://imgur.com/f8XxI9d.png)
 
 ## Herramientas Utilizadas
 
