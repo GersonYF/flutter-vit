@@ -1,12 +1,59 @@
 # API de Segmentación Semántica con DeepLabV3 MobileViT
 
 ## Descripción
-Esta aplicación ofrece una API REST para realizar segmentación semántica en imágenes utilizando el modelo DeepLabV3 MobileViT. La segmentación semántica clasifica cada píxel de una imagen en diferentes categorías, permitiendo identificar y separar objetos en la imagen.
+Esta aplicación ofrece una API REST y una interfaz web (Streamlit) para realizar segmentación semántica en imágenes utilizando el modelo **DeepLabV3 con MobileViT**. Esta técnica clasifica cada píxel de una imagen en diferentes categorías, permitiendo identificar y separar objetos con alta precisión y eficiencia.
+
+![Segmentación MobileViT](https://imgur.com/lWcXTQc.png)
+
+## Herramientas Utilizadas
+
+- 🐍 **[Python](https://www.python.org/)**
+- 🔢 **[TensorFlow](https://www.tensorflow.org/)**
+- 🐳 **[Docker](https://www.docker.com/)**
+- 📈 **[Streamlit](https://streamlit.io/)**
+- 🌐 **[Flask](https://flask.palletsprojects.com/)**
+- 🧬 **[Hugging Face Transformers](https://huggingface.co/docs/transformers)**
+- 🧰 **[Git](https://git-scm.com/)**
+- 🗂 **[GitHub](https://github.com/)**
 
 ## Contenido del Proyecto
-- `app.py`: Servidor Flask que implementa la API
-- `Dockerfile`: Configuración para crear la imagen de Docker
-- `test_client.py`: Cliente de prueba para la API
+- `app.py`: Servidor Flask que expone la API REST.
+- `app_1.py`: Aplicación Streamlit oficial del proyecto (versión aprobada).
+- `app_v2.py`: Versión alternativa de la app, **no usada en este proyecto**.
+- `segmentation.py`: Script auxiliar para pruebas en consola.
+- `test_client.py`: Script de prueba de cliente para la API.
+- `Dockerfile`: Imagen Docker para desplegar la API.
+- `README.md`: Documento actual.
+> Nota: `app_v2.py` **no debe utilizarse**, ya que fue descartada por criterios de diseño y compatibilidad con los lineamientos del proyecto.
+
+## Consideraciones
+
+- El modelo usado es **`apple/deeplabv3-mobilevit-small`** de HuggingFace.
+- Se hicieron pruebas con el modelo MobileViTv2, pero fue descartado `app_v2.py`
+- Se utiliza una **paleta de colores aleatoria fija** para representar las clases detectadas.
+- En entorno de producción, se recomienda el uso de `docker-compose` con proxy NGINX y configuración HTTPS.
+
+## Arquitectura del Proyecto
+
+```
+                +--------------------+
+                |    app_1.py (UI)   |
+                | Streamlit (Web)    |
+                +--------+-----------+
+                         |
+                         v
+       +-----------------------------------+
+       |   DeepLabV3 + MobileViT (TensorFlow) |
+       |      Modelo de Segmentación        |
+       +-----------------------------------+
+                         ^
+                         |
+                +--------+---------+
+                |  app.py (API REST) |
+                |     con Flask     |
+                +------------------+
+```
+
 
 ## Requisitos
 - Docker instalado en tu sistema
@@ -14,6 +61,27 @@ Esta aplicación ofrece una API REST para realizar segmentación semántica en i
 - (Opcional) GPU compatible con CUDA para un procesamiento más rápido
 
 ## Instalación y Ejecución
+### A. Interfaz Web (Streamlit)
+
+#### 1. Construir imagen con nombre personalizado:
+```bash
+docker build -t mvitv1 .
+```
+
+#### 2. Ejecutar Streamlit en contenedor:
+```bash
+docker run -p 8080:8080 mvitv1 streamlit run app_1.py
+```
+
+#### 3. Con GPU (si aplica):
+```bash
+docker run -p 8080:8080 --gpus all --rm mvitv1 streamlit run app_1.py
+```
+
+Esto levantará una interfaz web en [http://localhost:8080](http://localhost:8080) donde podrás cargar imágenes para segmentarlas visualmente.
+
+
+### B. API REST (Flask)
 
 ### 1. Construir la imagen de Docker
 ```bash
@@ -267,3 +335,4 @@ services:
 ### Errores al procesar imágenes grandes
 - La API puede tener problemas con imágenes muy grandes
 - Considera redimensionar las imágenes antes de enviarlas
+
