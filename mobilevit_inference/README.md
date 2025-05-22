@@ -70,12 +70,12 @@ docker build -t mvitv1 .
 
 #### 2. Ejecutar Streamlit en contenedor:
 ```bash
-docker run -p 8080:8080 mvitv1 streamlit run app_1.py
+docker run -p 8080:8080 mvitv1
 ```
 
 #### 3. Con GPU (si aplica):
 ```bash
-docker run -p 8080:8080 --gpus all --rm mvitv1 streamlit run app_1.py
+docker run -p 8080:8080 --gpus all --rm mvitv1
 ```
 
 Esto levantará una interfaz web en [http://localhost:8080](http://localhost:8080) donde podrás cargar imágenes para segmentarlas visualmente.
