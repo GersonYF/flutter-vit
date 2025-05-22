@@ -5,7 +5,10 @@ import matplotlib.pyplot as plt
 import cv2
 import requests
 import tensorflow as tf
+import time
+import av
 from transformers import AutoImageProcessor, TFMobileViTForSemanticSegmentation
+from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, WebRtcMode
 
 tf.get_logger().setLevel('ERROR')
 
@@ -16,48 +19,77 @@ model = TFMobileViTForSemanticSegmentation.from_pretrained(MODEL_NAME)
 
 # Mapeo de clases y colores (COCO)
 id2label = model.config.id2label
-# Paleta aleatoria fija (puedes personalizarla con colores específicos si deseas)
 np.random.seed(42)
 num_classes = len(id2label)
 palette = np.random.randint(0, 255, size=(num_classes, 3), dtype=np.uint8)
-
 # Interfaz Streamlit
+st.set_page_config(layout="wide")
 st.title("Segmentación Semántica con MobileViT")
-st.write("Sube una imagen para segmentarla con el modelo MobileViT.")
 
-uploaded_file = st.file_uploader("Elige una imagen", type=["jpg", "jpeg", "png"])
+# Layout dividido
+col1, col2 = st.columns([4, 1])
+timer_placeholder = col2.empty()
 
-if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Imagen original", use_column_width=True)
+# Mostrar leyenda de clases
 
-    # Preprocesamiento
-    inputs = processor(images=image, return_tensors="tf")
-    outputs = model(**inputs)
-    logits = outputs.logits  # [1, num_labels, h, w]
-    upsampled_logits = tf.image.resize(logits, size=image.size[::-1], method='bilinear')  # (width, height)
-    segmentation = tf.argmax(upsampled_logits, axis=1)[0].numpy().astype(np.uint8)
+with st.expander("🎨 Leyenda de Clases"):
+    legend_html = ""
+    for label_id, label_name in id2label.items():
+        color = palette[int(label_id)]
+        hex_color = "#{:02x}{:02x}{:02x}".format(*color)
+        legend_html += f"""
+            <div style='display: flex; align-items: center; margin-bottom: 4px;'>
+                <div style='width: 16px; height: 16px; background-color: {hex_color}; margin-right: 8px; border: 1px solid #000;'></div>
+                <span>{label_name}</span>
+            </div>
+        """
+    st.markdown(legend_html, unsafe_allow_html=True)
 
-    # Crear overlay
-    seg_rgb = np.zeros((*segmentation.shape, 3), dtype=np.uint8)
-    for label, color in enumerate(palette):
-        seg_rgb[segmentation == label] = color
+class Segmentador(VideoProcessorBase):
+    def __init__(self):
+        self.last_segment_time = 0
+        self.overlay = None
+        self.processing = False
 
-    image_np = np.array(image)
-    seg_resized = cv2.resize(seg_rgb, (image_np.shape[1], image_np.shape[0]), interpolation=cv2.INTER_NEAREST)
-    overlay = (0.5 * image_np + 0.5 * seg_resized).astype(np.uint8)
-    # Mostrar resultado
-    st.image(overlay, caption="Imagen con segmentación", use_column_width=True)
+    def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
+        img = frame.to_ndarray(format="bgr24")
+        img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        current_time = time.time()
 
-    # Mostrar leyenda
-    st.markdown("### Leyenda de clases detectadas:")
-    labels_present = np.unique(segmentation)
-    for label in labels_present:
-        label_name = id2label[label]
-        color = palette[label]
-        st.markdown(
-            f"<div style='display: flex; align-items: center;'>"
-            f"<div style='width: 20px; height: 20px; background-color: rgb{tuple(color)}; margin-right: 10px;'></div>"
-            f"<div>{label_name}</div></div>",
-            unsafe_allow_html=True
-        )
+        if current_time - self.last_segment_time > 3:
+            self.processing = True
+            self.last_segment_time = current_time
+
+            # Segmentación
+            image_pil = Image.fromarray(img_rgb)
+            inputs = processor(images=image_pil, return_tensors="tf")
+            outputs = model(**inputs)
+            logits = outputs.logits
+            logits_perm = tf.transpose(logits, perm=[0, 2, 3, 1])
+            upsampled = tf.image.resize(logits_perm, size=image_pil.size[::-1], method='bilinear')
+            upsampled = tf.transpose(upsampled, perm=[0, 3, 1, 2])
+            segmentation = tf.argmax(upsampled, axis=1)[0].numpy().astype(np.uint8)
+
+            seg_rgb = np.zeros((*segmentation.shape, 3), dtype=np.uint8)
+            for label, color in enumerate(palette):
+                seg_rgb[segmentation == label] = color
+            seg_resized = cv2.resize(seg_rgb, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
+            self.overlay = (0.5 * img_rgb + 0.5 * seg_resized).astype(np.uint8)
+            self.processing = False
+
+        if self.processing:
+            bordered = cv2.copyMakeBorder(img_rgb, 10, 10, 10, 10, cv2.BORDER_CONSTANT, value=[255, 0, 0])
+            return av.VideoFrame.from_ndarray(bordered, format="rgb24")
+        elif self.overlay is not None:
+            return av.VideoFrame.from_ndarray(self.overlay, format="rgb24")
+        else:
+            return av.VideoFrame.from_ndarray(img_rgb, format="rgb24")
+        
+# Streamlit WebRTC
+webrtc_streamer(
+    key="segm",
+    mode=WebRtcMode.SENDRECV,
+    video_processor_factory=Segmentador,
+    media_stream_constraints={"video": True, "audio": False},
+    async_processing=True
+)

@@ -13,13 +13,15 @@ RUN apt-get update && apt-get install -y \
 
 # Instalar dependencias de Python
 RUN pip install --no-cache-dir \
-    transformers \
+    # transformers \
+    transformers>=4.31.0 \
     requests==2.31.0 \
     Pillow==9.5.0 \
     matplotlib==3.7.1 \
     numpy==1.24.3 \
     streamlit==1.24.0 \
-    protobuf==3.20.3
+    protobuf==3.20.3 \
+    streamlit-webrtc
 
 # Pre-descargar el modelo durante la construcción de la imagen
 RUN python -c "import warnings; warnings.filterwarnings('ignore'); \
