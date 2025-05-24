@@ -2,12 +2,12 @@ FROM nvcr.io/nvidia/l4t-tensorflow:r32.7.1-tf2.7-py3
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-opencv \
     libgl1-mesa-glx \
     && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get install -y python3-pip
+RUN apt-get install -y --no-install-recommends python3-pip
 RUN pip3 install --upgrade pip setuptools wheel
 
 RUN pip3 install --no-cache-dir \
