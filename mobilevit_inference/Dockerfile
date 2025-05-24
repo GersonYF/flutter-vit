@@ -31,10 +31,10 @@ RUN python -c "import warnings; warnings.filterwarnings('ignore'); \
     model = TFMobileViTForSemanticSegmentation.from_pretrained(model_name)"
 
 # Copiar la aplicación
-COPY app_1.py .
+COPY app_old.py .
 
 # Exponer el puerto de Streamlit
 EXPOSE 8080
 
 # Comando para ejecutar Streamlit
-CMD ["streamlit", "run", "app_1.py", "--server.port=8080", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "app_old.py", "--server.port=8080", "--server.address=0.0.0.0"]
