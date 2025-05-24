@@ -1,40 +1,27 @@
-# Usar una imagen base de TensorFlow oficial
-FROM tensorflow/tensorflow:2.12.0
+FROM nvcr.io/nvidia/l4t-tensorflow:r32.7.1-tf2.7-py3
 
-# Establecer directorio de trabajo
 WORKDIR /app
 
-# Instalar dependencias del sistema
 RUN apt-get update && apt-get install -y \
-    build-essential \
     python3-opencv \
     libgl1-mesa-glx \
     && rm -rf /var/lib/apt/lists/*
 
-# Instalar dependencias de Python
-RUN pip install --no-cache-dir \
-    # transformers \
-    transformers>=4.31.0 \
-    requests==2.31.0 \
+RUN apt-get install -y python3-pip
+RUN pip3 install --upgrade pip setuptools wheel
+
+RUN pip3 install --no-cache-dir \
+    numpy \
     Pillow==9.5.0 \
     matplotlib==3.7.1 \
-    numpy==1.24.3 \
     streamlit==1.24.0 \
     protobuf==3.20.3 \
-    streamlit-webrtc
+    streamlit-webrtc \
+    requests==2.31.0 \
+    transformers==4.31.0
 
-# Pre-descargar el modelo durante la construcción de la imagen
-RUN python -c "import warnings; warnings.filterwarnings('ignore'); \
-    from transformers import AutoImageProcessor, TFMobileViTForSemanticSegmentation; \
-    model_name='apple/deeplabv3-mobilevit-small'; \
-    processor = AutoImageProcessor.from_pretrained(model_name); \
-    model = TFMobileViTForSemanticSegmentation.from_pretrained(model_name)"
-
-# Copiar la aplicación
 COPY app_old.py .
 
-# Exponer el puerto de Streamlit
 EXPOSE 8080
 
-# Comando para ejecutar Streamlit
 CMD ["streamlit", "run", "app_old.py", "--server.port=8080", "--server.address=0.0.0.0"]
