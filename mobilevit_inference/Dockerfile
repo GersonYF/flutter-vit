@@ -13,8 +13,7 @@ RUN apt-get update && apt-get install -y \
 
 # Instalar dependencias de Python
 RUN pip install --no-cache-dir \
-    # transformers \
-    transformers>=4.31.0 \
+    transformers==4.36.2 \
     requests==2.31.0 \
     Pillow==9.5.0 \
     matplotlib==3.7.1 \
@@ -31,10 +30,11 @@ RUN python -c "import warnings; warnings.filterwarnings('ignore'); \
     model = TFMobileViTForSemanticSegmentation.from_pretrained(model_name)"
 
 # Copiar la aplicación
-COPY app_1.py .
+COPY combined.py .
+COPY .streamlit /root/.streamlit
 
 # Exponer el puerto de Streamlit
 EXPOSE 8080
 
 # Comando para ejecutar Streamlit
-CMD ["streamlit", "run", "app_1.py", "--server.port=8080", "--server.address=0.0.0.0"]
+CMD ["streamlit", "run", "combined.py", "--server.port=8080", "--server.address=0.0.0.0"]
