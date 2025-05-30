@@ -6,14 +6,14 @@ import torch
 # import tensorflow as tf
 import time
 import av
-from transformers import AutoImageProcessor, MobileViTForSemanticSegmentation
+from transformers import AutoFeatureExtractor, MobileViTForSemanticSegmentation
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, WebRtcMode
 
 # tf.get_logger().setLevel('ERROR')
 
 # Cargar el modelo y procesador
 MODEL_NAME = "apple/deeplabv3-mobilevit-small"
-processor = AutoImageProcessor.from_pretrained(MODEL_NAME)
+processor = AutoFeatureExtractor.from_pretrained(MODEL_NAME)
 model = MobileViTForSemanticSegmentation.from_pretrained(MODEL_NAME)
 model.eval()
 
@@ -62,7 +62,7 @@ class Segmentador(VideoProcessorBase):
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         current_time = time.time()
 
-        if current_time - self.last_segment_time > 3:
+        if current_time - self.last_segment_time > 0.1:
             self.processing = True
             self.last_segment_time = current_time
 
