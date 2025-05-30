@@ -3,11 +3,7 @@ FROM nvcr.io/nvidia/l4t-pytorch:r32.7.1-pth1.10-py3
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Eliminar entradas de Kitware y configurar zona horaria
-RUN find /etc/apt/ -name '*.list' -exec sed -i '/kitware/d' {} + && \
-    ln -fs /usr/share/zoneinfo/America/Bogota /etc/localtime && \
-    apt-get update || true && \
-    apt-get install -y tzdata && \
-    dpkg-reconfigure --frontend noninteractive tzdata
+RUN ln -fs /usr/share/zoneinfo/America/Bogota /etc/localtime && apt-get update && apt-get install -y tzdata && dpkg-reconfigure --frontend noninteractive tzdata
 
 WORKDIR /app
 
@@ -34,7 +30,7 @@ RUN pip3 install --no-cache-dir \
     streamlit \
     streamlit-webrtc \
     opencv-python-headless \
-    av==9.2.0
+    av==8.0.3
 
 # Pre-descargar modelo (puede ajustar en caso de incompatibilidades)
 RUN python3 -c "import warnings; warnings.filterwarnings('ignore'); \
