@@ -63,6 +63,7 @@ RUN python3.8 -m pip install --no-cache-dir \
     protobuf \
     torch \
     torchvision \
+    opencv-python-headless \
     torchaudio
 
 # Instalar PyAV desde pip
