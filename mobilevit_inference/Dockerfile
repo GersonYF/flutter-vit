@@ -1,5 +1,5 @@
 # Imagen base para Jetson con soporte para CUDA 10.2 y Python 3.6
-FROM nvcr.io/nvidia/l4t-tensorflow:r32.6.1-tf2.7-py3
+FROM nvcr.io/nvidia/l4t-tensorflow:r32.6.1-tf2.5-py3
 # Establecer directorio de trabajo
 WORKDIR /app
 
