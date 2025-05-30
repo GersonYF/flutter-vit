@@ -27,7 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip3 install --upgrade pip setuptools wheel
 
 RUN pip3 install --no-cache-dir \
-    huggingface-hub==0.19.4 \
+    huggingface-hub==0.13.4 \
     transformers==4.36.2 \
     streamlit \
     streamlit-webrtc \
