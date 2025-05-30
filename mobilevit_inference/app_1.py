@@ -62,7 +62,7 @@ class Segmentador(VideoProcessorBase):
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         current_time = time.time()
 
-        if current_time - self.last_segment_time > 0.1:
+        if current_time - self.last_segment_time > 0.5:
             self.processing = True
             self.last_segment_time = current_time
 
