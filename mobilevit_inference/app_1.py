@@ -1,9 +1,8 @@
 import streamlit as st
 import numpy as np
 from PIL import Image
-import matplotlib.pyplot as plt
 import cv2
-import requests
+import torch
 import tensorflow as tf
 import time
 import av
@@ -16,12 +15,18 @@ tf.get_logger().setLevel('ERROR')
 MODEL_NAME = "apple/deeplabv3-mobilevit-small"
 processor = AutoImageProcessor.from_pretrained(MODEL_NAME)
 model = MobileViTForSemanticSegmentation.from_pretrained(MODEL_NAME)
+model.eval()
+
+# Enviar modelo a GPU si está disponible
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = model.to(device)
 
 # Mapeo de clases y colores (COCO)
 id2label = model.config.id2label
 np.random.seed(42)
 num_classes = len(id2label)
 palette = np.random.randint(0, 255, size=(num_classes, 3), dtype=np.uint8)
+
 # Interfaz Streamlit
 st.set_page_config(layout="wide")
 st.title("Segmentación Semántica con MobileViT")
@@ -45,6 +50,7 @@ with st.expander("🎨 Leyenda de Clases"):
         """
     st.markdown(legend_html, unsafe_allow_html=True)
 
+
 class Segmentador(VideoProcessorBase):
     def __init__(self):
         self.last_segment_time = 0
@@ -62,13 +68,17 @@ class Segmentador(VideoProcessorBase):
 
             # Segmentación
             image_pil = Image.fromarray(img_rgb)
-            inputs = processor(images=image_pil, return_tensors="tf")
-            outputs = model(**inputs)
-            logits = outputs.logits
-            logits_perm = tf.transpose(logits, perm=[0, 2, 3, 1])
-            upsampled = tf.image.resize(logits_perm, size=image_pil.size[::-1], method='bilinear')
-            upsampled = tf.transpose(upsampled, perm=[0, 3, 1, 2])
-            segmentation = tf.argmax(upsampled, axis=1)[0].numpy().astype(np.uint8)
+            inputs = processor(images=image_pil, return_tensors="pt").to(device)
+            with torch.no_grad():
+                outputs = model(**inputs)
+                logits = outputs.logits
+                upsampled = torch.nn.functional.interpolate(
+                    logits,
+                    size=image_pil.size[::-1],  # (width, height)
+                    mode="bilinear",
+                    align_corners=False,
+                )
+                segmentation = torch.argmax(upsampled, dim=1)[0].cpu().numpy().astype(np.uint8)
 
             seg_rgb = np.zeros((*segmentation.shape, 3), dtype=np.uint8)
             for label, color in enumerate(palette):
@@ -84,7 +94,7 @@ class Segmentador(VideoProcessorBase):
             return av.VideoFrame.from_ndarray(self.overlay, format="rgb24")
         else:
             return av.VideoFrame.from_ndarray(img_rgb, format="rgb24")
-        
+
 # Streamlit WebRTC
 webrtc_streamer(
     key="segm",
