@@ -1,19 +1,23 @@
 # Imagen base para Jetson con soporte para CUDA 10.2 y Python 3.6
-FROM nvcr.io/nvidia/l4t-tensorflow:r32.6.1-tf2.5-py3
+FROM nvcr.io/nvidia/l4t-base:r32.6.1
 # Establecer directorio de trabajo
 WORKDIR /app
 
 # Instalar dependencias del sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    software-properties-common \
+    && add-apt-repository ppa:deadsnakes/ppa \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    python3.8 \
+    python3.8-venv \
+    python3.8-dev \
     build-essential \
-    python3-dev \
-    cython3 \
-    python3-opencv \
-    libgl1-mesa-glx \
     ffmpeg \
-    pkg-config \
+    cython3 \
+    libgl1-mesa-glx \
     libsm6 \
     libxext6 \
+    pkg-config \
     libavcodec-dev \
     libavformat-dev \
     libavdevice-dev \
@@ -24,17 +28,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libavresample-dev \
     libsrtp2-dev \
     libopus-dev \
-    python3-pip \
+    python3-opencv \
+    curl \
+    git \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
+# Entorno con Python 3.8
+RUN python3.8 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
 # Instalar pip y paquetes
-RUN python3 -m pip install --upgrade pip setuptools wheel
+RUN pip install --upgrade pip setuptools wheel cython
 
-RUN python3 -m pip install cython==0.29.21
+RUN pip install av==7.0.0
 
-RUN python3 -m pip install --no-cache-dir av==7.0.0
-
-RUN python3 -m pip install --no-cache-dir \
+RUN pip install \
     transformers \
     requests \
     Pillow \
@@ -44,7 +52,7 @@ RUN python3 -m pip install --no-cache-dir \
     streamlit-webrtc \
     protobuf
 
-RUN python3 -c "import warnings; warnings.filterwarnings('ignore'); \
+RUN python -c "import warnings; warnings.filterwarnings('ignore'); \
     from transformers import AutoImageProcessor, TFMobileViTForSemanticSegmentation; \
     model_name='apple/deeplabv3-mobilevit-small'; \
     AutoImageProcessor.from_pretrained(model_name); \
