@@ -3,13 +3,13 @@ import numpy as np
 from PIL import Image
 import cv2
 import torch
-import tensorflow as tf
+# import tensorflow as tf
 import time
 import av
 from transformers import AutoImageProcessor, MobileViTForSemanticSegmentation
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, WebRtcMode
 
-tf.get_logger().setLevel('ERROR')
+# tf.get_logger().setLevel('ERROR')
 
 # Cargar el modelo y procesador
 MODEL_NAME = "apple/deeplabv3-mobilevit-small"
