@@ -22,6 +22,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libswscale-dev \
     libswresample-dev \
     pkg-config \
+    python3-dev \
+    build-essential \
+    cython \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Actualizar pip y setuptools
