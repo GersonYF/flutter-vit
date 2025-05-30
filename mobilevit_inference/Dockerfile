@@ -2,6 +2,12 @@ FROM nvcr.io/nvidia/l4t-pytorch:r32.7.1-pth1.10-py3
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# Eliminar repo Kitware roto y configurar zona horaria
+RUN rm -f /etc/apt/sources.list.d/kitware.list && \
+    ln -fs /usr/share/zoneinfo/America/Bogota /etc/localtime && \
+    apt-get update && apt-get install -y tzdata && \
+    dpkg-reconfigure --frontend noninteractive tzdata
+
 # Establecer zona horaria (opcional)
 RUN ln -fs /usr/share/zoneinfo/America/Bogota /etc/localtime && \
     apt-get update && apt-get install -y tzdata && \
@@ -12,14 +18,21 @@ WORKDIR /app
 
 # Instalar dependencias adicionales necesarias
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-glx ffmpeg && \
+    libgl1-mesa-glx \
+    ffmpeg \
+    libglib2.0-0 \
+    gstreamer1.0-plugins-base \
+    gstreamer1.0-plugins-good \
+    gstreamer1.0-libav \
+    libgomp1 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Instalar paquetes Python adicionales
 RUN pip3 install --no-cache-dir \
     huggingface-hub==0.19.4 \
     transformers==4.36.2 \
-    streamlit streamlit-webrtc \
+    streamlit \
+    streamlit-webrtc \
     opencv-python-headless \
     av==10.0.0
 
