@@ -51,7 +51,6 @@ RUN python3.8 -m pip install --upgrade pip setuptools wheel
 RUN python3.8 -m pip cache purge
 RUN python3.8 -m pip install --no-cache-dir huggingface-hub==0.19.4
 RUN python3.8 -m pip install --no-cache-dir transformers==4.36.2
-RUN apt-get remove -y cython3 cython
 
 RUN python3.8 -m pip install --no-cache-dir \
     cython==0.29.21 \
