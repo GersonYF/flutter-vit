@@ -1,40 +1,39 @@
-# Usar una imagen base de TensorFlow oficial
-FROM tensorflow/tensorflow:2.12.0
-
+# Imagen base para Jetson con soporte para CUDA 10.2 y Python 3.6
+FROM nvcr.io/nvidia/l4t-tensorflow:r32.6.1-tf2.7-py3
 # Establecer directorio de trabajo
 WORKDIR /app
 
 # Instalar dependencias del sistema
 RUN apt-get update && apt-get install -y \
-    build-essential \
     python3-opencv \
     libgl1-mesa-glx \
+    libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# Instalar dependencias de Python
-RUN pip install --no-cache-dir \
-    transformers==4.36.2 \
+# Instalar pip y paquetes
+RUN python3 -m ensurepip && python3 -m pip install --upgrade pip
+RUN pip3 install --no-cache-dir \
+    transformers==4.30.0 \
     requests==2.31.0 \
     Pillow==9.5.0 \
-    matplotlib==3.7.1 \
-    numpy==1.24.3 \
-    streamlit==1.24.0 \
+    matplotlib==3.5.3 \
+    numpy==1.21.6 \
+    streamlit==1.22.0 \
     protobuf==3.20.3 \
-    streamlit-webrtc
+    streamlit-webrtc==0.45.0 \
+    av==10.0.0
 
-# Pre-descargar el modelo durante la construcción de la imagen
-RUN python -c "import warnings; warnings.filterwarnings('ignore'); \
+RUN python3 -c "import warnings; warnings.filterwarnings('ignore'); \
     from transformers import AutoImageProcessor, TFMobileViTForSemanticSegmentation; \
     model_name='apple/deeplabv3-mobilevit-small'; \
     processor = AutoImageProcessor.from_pretrained(model_name); \
     model = TFMobileViTForSemanticSegmentation.from_pretrained(model_name)"
 
 # Copiar la aplicación
-COPY combined.py .
-COPY .streamlit /root/.streamlit
+COPY app_1.py .
 
-# Exponer el puerto de Streamlit
+# Exponer puerto para Streamlit
 EXPOSE 8080
 
-# Comando para ejecutar Streamlit
-CMD ["streamlit", "run", "combined.py", "--server.port=8080", "--server.address=0.0.0.0"]
+# Ejecutar la app
+CMD ["streamlit", "run", "app_1.py", "--server.port=8080", "--server.address=0.0.0.0"]
