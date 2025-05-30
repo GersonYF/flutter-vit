@@ -13,14 +13,16 @@ WORKDIR /app
 
 # Instalar dependencias del sistema necesarias
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgl1-mesa-glx \
     ffmpeg \
-    libglib2.0-0 \
-    gstreamer1.0-plugins-base \
-    gstreamer1.0-plugins-good \
-    gstreamer1.0-libav \
-    libgomp1 && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
+    libavdevice-dev \
+    libavfilter-dev \
+    libavformat-dev \
+    libavcodec-dev \
+    libavutil-dev \
+    libswscale-dev \
+    libswresample-dev \
+    pkg-config \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Actualizar pip y setuptools
 RUN pip3 install --upgrade pip setuptools wheel
@@ -32,7 +34,7 @@ RUN pip3 install --no-cache-dir \
     streamlit \
     streamlit-webrtc \
     opencv-python-headless \
-    av==10.0.0
+    av==9.2.0
 
 # Pre-descargar modelo (puede ajustar en caso de incompatibilidades)
 RUN python3 -c "import warnings; warnings.filterwarnings('ignore'); \
