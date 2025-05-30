@@ -4,7 +4,7 @@ FROM nvcr.io/nvidia/l4t-tensorflow:r32.6.1-tf2.5-py3
 WORKDIR /app
 
 # Instalar dependencias del sistema
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     python3-opencv \
     libgl1-mesa-glx \
@@ -27,16 +27,17 @@ RUN apt-get update && apt-get install -y \
 # Instalar pip y paquetes
 RUN python3 -m pip install --upgrade pip setuptools wheel cython
 
+RUN python3 -m pip install --no-cache-dir av==8.0.3
+
 RUN python3 -m pip install --no-cache-dir \
-    av==8.0.3 \
     transformers \
     requests \
     Pillow \
     matplotlib \
     numpy \
-    streamlit
-    
-RUN python3 -m pip install --no-cache-dir streamlit-webrtc protobuf
+    streamlit \
+    streamlit-webrtc \
+    protobuf
 
 RUN python3 -c "import warnings; warnings.filterwarnings('ignore'); \
     from transformers import AutoImageProcessor, TFMobileViTForSemanticSegmentation; \
