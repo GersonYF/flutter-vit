@@ -10,27 +10,33 @@ RUN apt-get update && apt-get install -y \
     libgl1-mesa-glx \
     ffmpeg \
     pkg-config \
+    libsm6 \
+    libxext6 \
     libavcodec-dev \
     libavformat-dev \
     libswscale-dev \
+    libavfilter-dev \
     libavdevice-dev \
     libavutil-dev \
+    libavresample-dev \
     libsrtp2-dev \
+    libopus-dev \
     python3-pip \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Instalar pip y paquetes
-RUN pip3 install --upgrade pip && \
-    pip3 install --no-cache-dir \
+RUN python3 -m pip install --upgrade pip setuptools wheel cython
+
+RUN python3 -m pip install --no-cache-dir \
+    av==8.0.3 \
     transformers \
     requests \
     Pillow \
     matplotlib \
     numpy \
-    streamlit \
-    protobuf \
-    streamlit-webrtc \
-    av
+    streamlit
+    
+RUN python3 -m pip install --no-cache-dir streamlit-webrtc protobuf
 
 RUN python3 -c "import warnings; warnings.filterwarnings('ignore'); \
     from transformers import AutoImageProcessor, TFMobileViTForSemanticSegmentation; \
