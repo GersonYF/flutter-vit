@@ -62,8 +62,9 @@ RUN python3.8 -m pip install --no-cache-dir \
     streamlit-webrtc \
     protobuf
 
-# Instalar PyAV desde pip (requiere compilación con libav*)
-RUN python3.8 -m pip install av==7.0.0
+# Instalar PyAV desde pip
+RUN python3.8 -m pip install --no-cache-dir --no-build-isolation git+https://github.com/PyAV-Org/PyAV.git@v7.0.0
+
 
 # Pre-descargar el modelo durante la construcción de la imagen
 RUN python3.8 -c "import warnings; warnings.filterwarnings('ignore'); \
