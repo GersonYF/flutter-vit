@@ -1,23 +1,29 @@
-# Imagen base para Jetson con soporte para CUDA 10.2 y Python 3.6
+# Imagen base para Jetson con soporte para CUDA 10.2 y Python 3.8
 FROM nvcr.io/nvidia/l4t-base:r32.6.1
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Establecer zona horaria para evitar bloqueo de tzdata
+RUN ln -fs /usr/share/zoneinfo/America/Bogota /etc/localtime && \
+    apt-get update && apt-get install -y tzdata && \
+    dpkg-reconfigure --frontend noninteractive tzdata
+
 # Establecer directorio de trabajo
 WORKDIR /app
 
 # Instalar dependencias del sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    software-properties-common \
-    && add-apt-repository ppa:deadsnakes/ppa \
-    && apt-get update && apt-get install -y --no-install-recommends \
-    python3.8 \
-    python3.8-venv \
-    python3.8-dev \
     build-essential \
-    ffmpeg \
+    python3.8 \
+    python3.8-dev \
+    python3.8-distutils \
     cython3 \
+    python3-opencv \
     libgl1-mesa-glx \
+    ffmpeg \
+    pkg-config \
     libsm6 \
     libxext6 \
-    pkg-config \
     libavcodec-dev \
     libavformat-dev \
     libavdevice-dev \
@@ -28,21 +34,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libavresample-dev \
     libsrtp2-dev \
     libopus-dev \
-    python3-opencv \
     curl \
-    git \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Entorno con Python 3.8
-RUN python3.8 -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
+# Instalar pip para Python 3.8
+RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3.8
 
 # Instalar pip y paquetes
-RUN pip install --upgrade pip setuptools wheel cython
+RUN python3.8 -m pip install --upgrade pip setuptools wheel
 
-RUN pip install av==7.0.0
+# RUN pip install av==7.0.0
 
-RUN pip install \
+RUN python3.8 -m pip install \
+    cython==0.29.21 \
+    av==7.0.0 \
     transformers \
     requests \
     Pillow \
@@ -52,7 +57,7 @@ RUN pip install \
     streamlit-webrtc \
     protobuf
 
-RUN python -c "import warnings; warnings.filterwarnings('ignore'); \
+RUN python3.8 -c "import warnings; warnings.filterwarnings('ignore'); \
     from transformers import AutoImageProcessor, TFMobileViTForSemanticSegmentation; \
     model_name='apple/deeplabv3-mobilevit-small'; \
     AutoImageProcessor.from_pretrained(model_name); \
@@ -65,4 +70,4 @@ COPY app_1.py .
 EXPOSE 8080
 
 # Ejecutar la app
-CMD ["streamlit", "run", "app_1.py", "--server.port=8080", "--server.address=0.0.0.0"]
+CMD ["python3.8", "-m", "streamlit", "run", "app_1.py", "--server.port=8080", "--server.address=0.0.0.0"]
