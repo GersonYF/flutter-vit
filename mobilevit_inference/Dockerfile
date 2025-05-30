@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.8 \
     python3.8-dev \
     python3.8-distutils \
+    python3-distutils \
     cython3 \
     python3-opencv \
     libgl1-mesa-glx \
@@ -45,8 +46,6 @@ RUN curl -sS https://bootstrap.pypa.io/pip/3.8/get-pip.py -o get-pip.py && \
 
 # Instalar pip y paquetes
 RUN python3.8 -m pip install --upgrade pip setuptools wheel
-
-# RUN pip install av==7.0.0
 
 RUN python3.8 -m pip install --no-cache-dir \
     cython==0.29.21 \
