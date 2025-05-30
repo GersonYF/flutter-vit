@@ -2,17 +2,16 @@ FROM nvcr.io/nvidia/l4t-pytorch:r32.7.1-pth1.10-py3
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Eliminar entradas de Kitware de cualquier lista y configurar zona horaria
+# Eliminar entradas de Kitware y configurar zona horaria
 RUN find /etc/apt/ -name '*.list' -exec sed -i '/kitware/d' {} + && \
     ln -fs /usr/share/zoneinfo/America/Bogota /etc/localtime && \
-    apt-get update -o Acquire::AllowInsecureRepositories=true || true && \
+    apt-get update || true && \
     apt-get install -y tzdata && \
     dpkg-reconfigure --frontend noninteractive tzdata
 
-# Directorio de trabajo
 WORKDIR /app
 
-# Instalar dependencias adicionales necesarias
+# Instalar dependencias del sistema necesarias
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgl1-mesa-glx \
     ffmpeg \
@@ -23,18 +22,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Instalar paquetes de Python necesarios
+# Actualizar pip y setuptools
 RUN pip3 install --upgrade pip setuptools wheel
 
+# Instalar paquetes Python compatibles con Python 3.6 en ARM64
 RUN pip3 install --no-cache-dir \
-    huggingface-hub==0.13.4 \
-    transformers==4.36.2 \
+    huggingface-hub==0.4.0 \
+    transformers==4.6.1 \
     streamlit \
     streamlit-webrtc \
     opencv-python-headless \
     av==10.0.0
 
-# Pre-descargar el modelo
+# Pre-descargar modelo (puede ajustar en caso de incompatibilidades)
 RUN python3 -c "import warnings; warnings.filterwarnings('ignore'); \
     from transformers import AutoImageProcessor, MobileViTForSemanticSegmentation; \
     model_name='apple/deeplabv3-mobilevit-small'; \
@@ -44,8 +44,6 @@ RUN python3 -c "import warnings; warnings.filterwarnings('ignore'); \
 # Copiar la app
 COPY app_1.py .
 
-# Exponer puerto
 EXPOSE 8080
 
-# Ejecutar app
 CMD ["streamlit", "run", "app_1.py", "--server.port=8080", "--server.address=0.0.0.0"]
