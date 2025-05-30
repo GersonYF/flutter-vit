@@ -53,9 +53,9 @@ with st.expander("🎨 Leyenda de Clases"):
 
 class Segmentador(VideoProcessorBase):
     def __init__(self):
-        self.last_segment_time = 0
         self.overlay = None
         self.processing = False
+        self.last_segment_time = -np.inf
 
     def recv(self, frame: av.VideoFrame) -> av.VideoFrame:
         img = frame.to_ndarray(format="bgr24")
@@ -79,12 +79,17 @@ class Segmentador(VideoProcessorBase):
                     align_corners=False,
                 )
                 segmentation = torch.argmax(upsampled, dim=1)[0].cpu().numpy().astype(np.uint8)
+                print("Unique classes:", np.unique(segmentation))
 
             seg_rgb = np.zeros((*segmentation.shape, 3), dtype=np.uint8)
-            for label, color in enumerate(palette):
-                seg_rgb[segmentation == label] = color
+            # for label, color in enumerate(palette):
+            #     seg_rgb[segmentation == label] = color
+            seg_rgb[segmentation != 0] = [255, 0, 0]
             seg_resized = cv2.resize(seg_rgb, (img.shape[1], img.shape[0]), interpolation=cv2.INTER_NEAREST)
-            self.overlay = (0.5 * img_rgb + 0.5 * seg_resized).astype(np.uint8)
+
+            # seg_resized[segmentation != 0] = [255, 0, 0]  # rojo fuerte para todas las clases != fondo
+
+            self.overlay = cv2.addWeighted(img_rgb, 0.5, seg_resized, 0.5, 0)
             self.processing = False
 
         if self.processing:
