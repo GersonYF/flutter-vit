@@ -9,6 +9,13 @@ RUN apt-get update && apt-get install -y \
     python3-opencv \
     libgl1-mesa-glx \
     ffmpeg \
+    pkg-config \
+    libavcodec-dev \
+    libavformat-dev \
+    libswscale-dev \
+    libavdevice-dev \
+    libavutil-dev \
+    libsrtp2-dev \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
