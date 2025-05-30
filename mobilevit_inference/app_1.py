@@ -9,6 +9,8 @@ import av
 from transformers import AutoFeatureExtractor, MobileViTForSemanticSegmentation
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, WebRtcMode
 
+import logging
+logging.basicConfig(filename='segmentador.log', level=logging.INFO)
 # tf.get_logger().setLevel('ERROR')
 
 # Cargar el modelo y procesador
@@ -20,10 +22,10 @@ model.eval()
 # Enviar modelo a GPU si está disponible
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 if torch.cuda.is_available():
-    print(f"Usando GPU: {torch.cuda.get_device_name(0)}")
+    logging.info("Usando GPU: %s", torch.cuda.get_device_name(0))
 else:
-    print("Usando CPU")
-    
+    logging.info("Usando CPU")
+
 model = model.to(device)
 
 # Mapeo de clases y colores (COCO)
@@ -83,8 +85,11 @@ class Segmentador(VideoProcessorBase):
                     mode="bilinear",
                     align_corners=False,
                 )
+                logging.info("Logits shape: %s", logits.shape)
+                logging.info("Upsampled shape: %s", upsampled.shape)
+                logging.info("Image size: %s", image_pil.size)
                 segmentation = torch.argmax(upsampled, dim=1)[0].cpu().numpy().astype(np.uint8)
-                print("Unique classes:", np.unique(segmentation))
+                logging.info("Unique classes: %s", np.unique(segmentation))
 
             seg_rgb = np.zeros((*segmentation.shape, 3), dtype=np.uint8)
             # for label, color in enumerate(palette):
