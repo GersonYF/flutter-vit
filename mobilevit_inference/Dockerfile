@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.8-dev \
     python3.8-distutils \
     python3-distutils \
+    python3.8-venv \
     cython3 \
     python3-opencv \
     libgl1-mesa-glx \
@@ -35,21 +36,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libavresample-dev \
     libsrtp2-dev \
     libopus-dev \
+    python3-av \
     curl \
     ca-certificates \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Instalar pip para Python 3.8
+# Setup
 RUN curl -sS https://bootstrap.pypa.io/pip/3.8/get-pip.py -o get-pip.py && \
     python3.8 get-pip.py && \
     rm get-pip.py
-
 # Instalar pip y paquetes
 RUN python3.8 -m pip install --upgrade pip setuptools wheel
 
 RUN python3.8 -m pip install --no-cache-dir \
     cython==0.29.21 \
-    av==7.0.0 \
     transformers \
     requests \
     Pillow \
