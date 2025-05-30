@@ -2,15 +2,11 @@ FROM nvcr.io/nvidia/l4t-pytorch:r32.7.1-pth1.10-py3
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Eliminar repo Kitware roto y configurar zona horaria
-RUN rm -f /etc/apt/sources.list.d/kitware.list && \
+# Eliminar entradas de Kitware de cualquier lista y configurar zona horaria
+RUN find /etc/apt/ -name '*.list' -exec sed -i '/kitware/d' {} + && \
     ln -fs /usr/share/zoneinfo/America/Bogota /etc/localtime && \
-    apt-get update && apt-get install -y tzdata && \
-    dpkg-reconfigure --frontend noninteractive tzdata
-
-# Establecer zona horaria (opcional)
-RUN ln -fs /usr/share/zoneinfo/America/Bogota /etc/localtime && \
-    apt-get update && apt-get install -y tzdata && \
+    apt-get update -o Acquire::AllowInsecureRepositories=true || true && \
+    apt-get install -y tzdata && \
     dpkg-reconfigure --frontend noninteractive tzdata
 
 # Directorio de trabajo
@@ -27,7 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Instalar paquetes Python adicionales
+# Instalar paquetes de Python necesarios
 RUN pip3 install --no-cache-dir \
     huggingface-hub==0.19.4 \
     transformers==4.36.2 \
