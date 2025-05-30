@@ -39,7 +39,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Instalar pip para Python 3.8
-RUN curl -sS https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
+RUN curl -sS https://bootstrap.pypa.io/pip/3.8/get-pip.py -o get-pip.py && \
     python3.8 get-pip.py && \
     rm get-pip.py
 
