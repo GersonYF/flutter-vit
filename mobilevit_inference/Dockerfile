@@ -30,7 +30,7 @@ RUN pip3 install --upgrade pip setuptools wheel
 # Instalar paquetes Python compatibles con Python 3.6 en ARM64
 RUN pip3 install --no-cache-dir \
     huggingface-hub==0.4.0 \
-    transformers==4.6.1 \
+    transformers==4.17.0 \
     streamlit \
     streamlit-webrtc \
     opencv-python-headless \
