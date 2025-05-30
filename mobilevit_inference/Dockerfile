@@ -5,29 +5,31 @@ WORKDIR /app
 
 # Instalar dependencias del sistema
 RUN apt-get update && apt-get install -y \
+    build-essential \
     python3-opencv \
     libgl1-mesa-glx \
-    libglib2.0-0 \
+    ffmpeg \
+    python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
 # Instalar pip y paquetes
-RUN python3 -m ensurepip && python3 -m pip install --upgrade pip
-RUN pip3 install --no-cache-dir \
-    transformers==4.30.0 \
+RUN pip3 install --upgrade pip && \
+    pip3 install --no-cache-dir \
+    transformers>=4.31.0 \
     requests==2.31.0 \
     Pillow==9.5.0 \
-    matplotlib==3.5.3 \
-    numpy==1.21.6 \
-    streamlit==1.22.0 \
+    matplotlib==3.7.1 \
+    numpy==1.24.3 \
+    streamlit==1.24.0 \
     protobuf==3.20.3 \
-    streamlit-webrtc==0.45.0 \
-    av==10.0.0
+    streamlit-webrtc \
+    av
 
 RUN python3 -c "import warnings; warnings.filterwarnings('ignore'); \
     from transformers import AutoImageProcessor, TFMobileViTForSemanticSegmentation; \
     model_name='apple/deeplabv3-mobilevit-small'; \
-    processor = AutoImageProcessor.from_pretrained(model_name); \
-    model = TFMobileViTForSemanticSegmentation.from_pretrained(model_name)"
+    AutoImageProcessor.from_pretrained(model_name); \
+    TFMobileViTForSemanticSegmentation.from_pretrained(model_name)"
 
 # Copiar la aplicación
 COPY app_1.py .
