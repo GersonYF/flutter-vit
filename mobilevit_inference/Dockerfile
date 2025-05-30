@@ -36,7 +36,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libavresample-dev \
     libsrtp2-dev \
     libopus-dev \
-    python3-av \
     curl \
     ca-certificates \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -45,6 +44,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN curl -sS https://bootstrap.pypa.io/pip/3.8/get-pip.py -o get-pip.py && \
     python3.8 get-pip.py && \
     rm get-pip.py
+
 # Instalar pip y paquetes
 RUN python3.8 -m pip install --upgrade pip setuptools wheel
 
@@ -59,6 +59,10 @@ RUN python3.8 -m pip install --no-cache-dir \
     streamlit-webrtc \
     protobuf
 
+# Instalar PyAV desde pip (requiere compilación con libav*)
+RUN python3.8 -m pip install av==7.0.0
+
+# Pre-descargar el modelo durante la construcción de la imagen
 RUN python3.8 -c "import warnings; warnings.filterwarnings('ignore'); \
     from transformers import AutoImageProcessor, TFMobileViTForSemanticSegmentation; \
     model_name='apple/deeplabv3-mobilevit-small'; \
