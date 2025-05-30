@@ -50,9 +50,9 @@ RUN python3.8 -m pip install --upgrade pip setuptools wheel
 
 RUN python3.8 -m pip install --no-cache-dir \
     cython==0.29.21 \
-    transformers \
-    requests \
+    transformers==4.40.1 \
     Pillow \
+    requests \
     matplotlib \
     numpy \
     streamlit \
