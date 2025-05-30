@@ -60,17 +60,20 @@ RUN python3.8 -m pip install --no-cache-dir \
     numpy \
     streamlit \
     streamlit-webrtc \
-    protobuf
+    protobuf \
+    torch \
+    torchvision \
+    torchaudio
 
 # Instalar PyAV desde pip
 RUN python3.8 -m pip install --no-cache-dir av==10.0.0
 
 # Pre-descargar el modelo durante la construcción de la imagen
 RUN python3.8 -c "import warnings; warnings.filterwarnings('ignore'); \
-    from transformers import AutoImageProcessor, TFMobileViTForSemanticSegmentation; \
+    from transformers import AutoImageProcessor, MobileViTForSemanticSegmentation; \
     model_name='apple/deeplabv3-mobilevit-small'; \
     AutoImageProcessor.from_pretrained(model_name); \
-    TFMobileViTForSemanticSegmentation.from_pretrained(model_name)"
+    MobileViTForSemanticSegmentation.from_pretrained(model_name)"
 
 # Copiar la aplicación
 COPY app_1.py .

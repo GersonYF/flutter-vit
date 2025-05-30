@@ -7,7 +7,7 @@ import requests
 import tensorflow as tf
 import time
 import av
-from transformers import AutoImageProcessor, TFMobileViTForSemanticSegmentation
+from transformers import AutoImageProcessor, MobileViTForSemanticSegmentation
 from streamlit_webrtc import webrtc_streamer, VideoProcessorBase, WebRtcMode
 
 tf.get_logger().setLevel('ERROR')
@@ -15,7 +15,7 @@ tf.get_logger().setLevel('ERROR')
 # Cargar el modelo y procesador
 MODEL_NAME = "apple/deeplabv3-mobilevit-small"
 processor = AutoImageProcessor.from_pretrained(MODEL_NAME)
-model = TFMobileViTForSemanticSegmentation.from_pretrained(MODEL_NAME)
+model = MobileViTForSemanticSegmentation.from_pretrained(MODEL_NAME)
 
 # Mapeo de clases y colores (COCO)
 id2label = model.config.id2label
