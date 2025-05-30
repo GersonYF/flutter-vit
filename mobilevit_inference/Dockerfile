@@ -6,6 +6,8 @@ WORKDIR /app
 # Instalar dependencias del sistema
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
+    python3-dev \
+    cython3 \
     python3-opencv \
     libgl1-mesa-glx \
     ffmpeg \
@@ -14,10 +16,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libavcodec-dev \
     libavformat-dev \
-    libswscale-dev \
-    libavfilter-dev \
     libavdevice-dev \
+    libavfilter-dev \
     libavutil-dev \
+    libswscale-dev \
+    libswresample-dev \
     libavresample-dev \
     libsrtp2-dev \
     libopus-dev \
@@ -25,9 +28,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Instalar pip y paquetes
-RUN python3 -m pip install --upgrade pip setuptools wheel cython
+RUN python3 -m pip install --upgrade pip setuptools wheel
 
-RUN python3 -m pip install --no-cache-dir av==8.0.3
+RUN python3 -m pip install cython==0.29.21
+
+RUN python3 -m pip install --no-cache-dir av==7.0.0
 
 RUN python3 -m pip install --no-cache-dir \
     transformers \
