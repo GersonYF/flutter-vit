@@ -24,6 +24,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Instalar paquetes de Python necesarios
+RUN pip3 install --upgrade pip setuptools wheel
+
 RUN pip3 install --no-cache-dir \
     huggingface-hub==0.19.4 \
     transformers==4.36.2 \
