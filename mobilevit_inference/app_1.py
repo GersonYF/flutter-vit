@@ -19,6 +19,11 @@ model.eval()
 
 # Enviar modelo a GPU si está disponible
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+if torch.cuda.is_available():
+    print(f"Usando GPU: {torch.cuda.get_device_name(0)}")
+else:
+    print("Usando CPU")
+    
 model = model.to(device)
 
 # Mapeo de clases y colores (COCO)
@@ -62,7 +67,7 @@ class Segmentador(VideoProcessorBase):
         img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         current_time = time.time()
 
-        if current_time - self.last_segment_time > 0.5:
+        if current_time - self.last_segment_time > 1:
             self.processing = True
             self.last_segment_time = current_time
 
